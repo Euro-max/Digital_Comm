@@ -60,14 +60,17 @@ Digital_Comm/
 To keep code reviews clean and avoid merge conflicts:
 
 ### 1. Working on your Assigned Part
-Each member works directly in their designated branch:
-```bash
-# Switch to your project branch (example for Part 1):
-git checkout part-1
-
-# Verify current branch:
-git branch
-```
+- **Part 1 (Adham):** Already created as `part-1`:
+  ```bash
+  git checkout part-1
+  ```
+- **Teammates (Parts 2 & 3):** Create your own branch from `main`:
+  ```bash
+  git checkout main
+  git pull origin main
+  git checkout -b part-2   # (or part-3)
+  git push -u origin part-2
+  ```
 
 ### 2. Saving and Pushing Progress
 When you finish writing code, generating plots, or updating the report:
