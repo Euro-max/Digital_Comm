@@ -1,0 +1,48 @@
+# MATLAB
+*.asv
+*.m~
+*.slxc
+slprj/
+codegen/
+octave-workspace
+*.mat.tmp
+
+# Python (if used)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+.ipynb_checkpoints/
+
+# LaTeX / Report Builds
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.lot
+*.lof
+
+# MS Office temporary lock files
+~$*.docx
+~$*.pptx
+~$*.xlsx
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp
+*~
