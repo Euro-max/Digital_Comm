@@ -1,111 +1,38 @@
-% QPSK_GRAY_VS_NONGRAY
-% Task 2: Comparative BER Analysis between Gray and Non-Gray QPSK
+function qpsk = qpsk_gray_vs_nongray(num_bits, EbNo_dB, EbNo_fine, seed)
+% QPSK_GRAY_VS_NONGRAY Compares Gray QPSK (Fig. 2) vs. Non-Gray QPSK (Fig. 3).
 %
-% Compares:
-%   - Figure 2: Gray-coded QPSK
-%   - Figure 3: Non-Gray coded QPSK
-%
-% Cairo University - Faculty of Engineering
-% Electronics and Communications Dept. - 3rd Year Digital Communications
+% Output struct 'qpsk' contains simulated and theoretical BER curves for plots.m.
 
-clear; clc; close all;
+    rng(seed);
+    num_snr = length(EbNo_dB);
 
-%% Simulation Parameters
-EbNo_dB = 0:1:12;                         % Eb/N0 range in dB
-target_errors = 300;                      % Target bit errors
-max_bits = 4e6;                           % Max bits per SNR
-min_bits = 4e5;                           % Min bits per SNR
-k = 2;                                    % Bits per symbol for QPSK
+    sim_gray    = zeros(1, num_snr);
+    sim_nongray = zeros(1, num_snr);
 
-schemes = {'QPSK_Gray', 'QPSK_NonGray'};
-labels = {'QPSK Figure 2 (Gray Coded)', 'QPSK Figure 3 (Non-Gray Coded)'};
-colors = {'#1f77b4', '#d62728'};
-markers = {'o', 's'};
+    for s = 1:num_snr
+        % Use identical random bits for a fair side-by-side comparison
+        tx_bits = randi([0 1], 1, num_bits);
 
-ber_sim = zeros(2, length(EbNo_dB));
+        % Gray-coded QPSK (Figure 2)
+        [tx_g, k, const_g] = mapper(tx_bits, 'QPSK');
+        rx_g      = awgn_channel(tx_g, EbNo_dB(s), k);
+        rx_bits_g = demapper(rx_g, const_g, k);
+        sim_gray(s) = mean(tx_bits ~= rx_bits_g);
 
-fprintf('===============================================================\n');
-fprintf('  Task 2: QPSK Gray vs. Non-Gray Mapping BER Comparison       \n');
-fprintf('===============================================================\n');
-
-%% Simulation Loop
-for s = 1:2
-    mod_type = schemes{s};
-    fprintf('\n---> Simulating %s...\n', labels{s});
-    
-    for i = 1:length(EbNo_dB)
-        snr_db = EbNo_dB(i);
-        tot_bits = 0;
-        tot_errors = 0;
-        
-        while (tot_errors < target_errors) && (tot_bits < max_bits)
-            batch_symbols = 50000;
-            batch_bits = batch_symbols * k;
-            
-            % Generate random bits
-            tx_bits = randi([0 1], batch_bits, 1);
-            
-            % Map to symbols
-            [tx_symbols, ~] = mapper(tx_bits, mod_type);
-            
-            % Channel corruption (AWGN)
-            rx_symbols = awgn_channel(tx_symbols, snr_db, k, true);
-            
-            % Demap
-            rx_bits = demapper(rx_symbols, mod_type);
-            
-            % Count bit errors
-            errors = sum(tx_bits ~= rx_bits);
-            tot_errors = tot_errors + errors;
-            tot_bits = tot_bits + batch_bits;
-            
-            if (tot_bits >= min_bits) && (tot_errors == 0)
-                break;
-            end
-        end
-        
-        ber_sim(s, i) = tot_errors / tot_bits;
-        fprintf('   Eb/N0 = %2d dB | Bits = %7d | Errors = %5d | BER = %.3e\n', ...
-            snr_db, tot_bits, tot_errors, ber_sim(s, i));
+        % Non-Gray QPSK (Figure 3)
+        [tx_ng, k, const_ng] = mapper(tx_bits, 'QPSK_NONGRAY');
+        rx_ng      = awgn_channel(tx_ng, EbNo_dB(s), k);
+        rx_bits_ng = demapper(rx_ng, const_ng, k);
+        sim_nongray(s) = mean(tx_bits ~= rx_bits_ng);
     end
+
+    % Store all results in a struct
+    qpsk.EbNo_dB           = EbNo_dB;
+    qpsk.EbNo_fine         = EbNo_fine;
+    qpsk.sim_gray          = sim_gray;
+    qpsk.sim_nongray       = sim_nongray;
+    qpsk.theo_gray         = theoretical_ber(EbNo_dB,   'QPSK');
+    qpsk.theo_nongray      = theoretical_ber(EbNo_dB,   'QPSK_NONGRAY');
+    qpsk.theo_gray_fine    = theoretical_ber(EbNo_fine, 'QPSK');
+    qpsk.theo_nongray_fine = theoretical_ber(EbNo_fine, 'QPSK_NONGRAY');
 end
-
-% Theoretical curve for Gray-coded QPSK
-ber_theo = theoretical_ber(EbNo_dB, 'QPSK');
-
-%% Plotting
-figure('Name', 'Task 2 - QPSK Gray vs Non-Gray', 'Position', [150 150 850 600]);
-
-% Theoretical curve
-semilogy(EbNo_dB, ber_theo, 'k--', 'LineWidth', 1.8, ...
-    'DisplayName', 'QPSK Theoretical (Gray: Q(\surd(2E_b/N_0)))');
-hold on;
-
-% Gray simulation
-idx1 = ber_sim(1, :) > 0;
-semilogy(EbNo_dB(idx1), ber_sim(1, idx1), 'o-', 'Color', colors{1}, ...
-    'LineWidth', 1.6, 'MarkerSize', 7, 'DisplayName', labels{1});
-
-% Non-Gray simulation
-idx2 = ber_sim(2, :) > 0;
-semilogy(EbNo_dB(idx2), ber_sim(2, idx2), 's-', 'Color', colors{2}, ...
-    'LineWidth', 1.6, 'MarkerSize', 7, 'DisplayName', labels{2});
-
-grid on;
-box on;
-xlabel('E_b / N_0 (dB)', 'FontSize', 12, 'FontWeight', 'bold');
-ylabel('Bit Error Rate (BER)', 'FontSize', 12, 'FontWeight', 'bold');
-title('Effect of Bit Mapping on QPSK Performance over AWGN Channel', ...
-    'FontSize', 13, 'FontWeight', 'bold');
-legend('Location', 'southwest', 'FontSize', 10);
-axis([0 12 1e-6 1]);
-
-% Save plot to results folder
-output_dir = fullfile('..', 'results');
-if ~exist(output_dir, 'dir')
-    mkdir(output_dir);
-end
-
-savefig(fullfile(output_dir, 'task2_qpsk_comparison.fig'));
-saveas(gcf, fullfile(output_dir, 'task2_qpsk_comparison.png'));
-fprintf('\n[SUCCESS] Task 2 plot saved to %s\n', fullfile(output_dir, 'task2_qpsk_comparison.png'));

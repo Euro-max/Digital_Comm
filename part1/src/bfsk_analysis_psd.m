@@ -1,145 +1,76 @@
-% BFSK_ANALYSIS_PSD
-% Task 3: BFSK Performance, Signal Analysis, and Baseband PSD Simulation
+function bfsk = bfsk_analysis_psd(num_bits_ber, EbNo_dB, EbNo_fine, num_bits_psd, Tb, sps, seed)
+% BFSK_ANALYSIS_PSD Simulates coherent orthogonal BFSK BER, baseband Welch PSD,
+% theoretical PSD overlay, and baseband time-domain waveform.
 %
-% Tasks:
-%   1. Coherent BFSK BER vs. Eb/N0 over AWGN (Simulated vs. Theoretical)
-%   2. Simulation of Power Spectral Density (PSD) using the baseband equivalent signal
-%
-% Cairo University - Faculty of Engineering
-% Electronics and Communications Dept. - 3rd Year Digital Communications
+% Signal model (Section 1.5):
+%   f_1 = (n_c + 1)/Tb,  f_2 = (n_c + 2)/Tb  =>  Delta_f = 1/Tb
+%   Carrier center frequency: f_c = (n_c + 1.5)/Tb
+%   Baseband equivalent: g_i(t) = sqrt(2*Eb/Tb) * exp(j * 2*pi * (+/- 1/(2*Tb)) * t)
 
-clear; clc; close all;
+    rng(seed);
+    num_snr = length(EbNo_dB);
 
-%% =========================================================================
-%% Section 1: Coherent BFSK BER Simulation
-%% =========================================================================
-fprintf('===============================================================\n');
-fprintf('  Task 3: BFSK BER Simulation & Baseband PSD Analysis          \n');
-fprintf('===============================================================\n');
-
-EbNo_dB = 0:1:13;
-target_errors = 300;
-max_bits = 4e6;
-min_bits = 4e5;
-
-ber_sim = zeros(size(EbNo_dB));
-ber_theo = theoretical_ber(EbNo_dB, 'BFSK'); % Q(sqrt(Eb/N0))
-
-fprintf('\n---> Running BFSK BER Monte Carlo Simulation...\n');
-
-for i = 1:length(EbNo_dB)
-    snr_db = EbNo_dB(i);
-    tot_bits = 0;
-    tot_errors = 0;
-    
-    EbNo_lin = 10^(snr_db / 10);
-    N0 = 1 / EbNo_lin;               % Assuming Eb = 1
-    sigma = sqrt(N0 / 2);
-    
-    while (tot_errors < target_errors) && (tot_bits < max_bits)
-        batch_bits = 100000;
-        tx_bits = randi([0 1], batch_bits, 1);
-        
-        % Signal space representation for orthogonal BFSK:
-        % Bit 0 -> s0 = [sqrt(Eb), 0]
-        % Bit 1 -> s1 = [0, sqrt(Eb)]
-        r1 = (tx_bits == 0) * 1.0 + sigma * randn(batch_bits, 1);
-        r2 = (tx_bits == 1) * 1.0 + sigma * randn(batch_bits, 1);
-        
-        % Optimum ML decision rule: r2 > r1 -> decided bit 1, else 0
-        rx_bits = double(r2 > r1);
-        
-        errors = sum(tx_bits ~= rx_bits);
-        tot_errors = tot_errors + errors;
-        tot_bits = tot_bits + batch_bits;
-        
-        if (tot_bits >= min_bits) && (tot_errors == 0)
-            break;
-        end
+    %% 1. Baseband BFSK BER Simulation (using mapper -> awgn_channel -> demapper)
+    sim_ber = zeros(1, num_snr);
+    for s = 1:num_snr
+        tx_bits = randi([0 1], 1, num_bits_ber);
+        [tx_sym, k, const] = mapper(tx_bits, 'BFSK');
+        rx_sym  = awgn_channel(tx_sym, EbNo_dB(s), k);
+        rx_bits = demapper(rx_sym, const, k);
+        sim_ber(s) = mean(tx_bits ~= rx_bits);
     end
-    
-    ber_sim(i) = tot_errors / tot_bits;
-    fprintf('   Eb/N0 = %2d dB | Bits = %7d | Errors = %5d | BER = %.3e\n', ...
-        snr_db, tot_bits, tot_errors, ber_sim(i));
+
+    %% 2. Baseband Equivalent Signal Generation for PSD & Waveform
+    Eb = 1;                             % Normalized bit energy
+    fs = sps / Tb;                      % Sampling frequency (Hz)
+    f_dev = 1 / (2 * Tb);               % Frequency offset +/- 1/(2*Tb)
+
+    bits_psd = randi([0 1], 1, num_bits_psd);
+    a_n      = 2 * bits_psd - 1;        % Map {0, 1} -> {-1, +1}
+    a_t      = repelem(a_n, sps);       % Oversample to sps samples per bit
+    t        = (0 : length(a_t) - 1) / fs;
+
+    % Continuous-phase baseband equivalent signal (Sunde's FSK, h = 1)
+    s_bb = sqrt(2 * Eb / Tb) * exp(1j * 2 * pi * f_dev * a_t .* t);
+
+    %% 3. Welch PSD Estimate (Baseband, Two-Sided Centered)
+    win_len  = 512;
+    noverlap = 256;
+    nfft     = 4096;
+    [psd_sim, f_psd] = pwelch(s_bb, hamming(win_len), noverlap, nfft, fs, 'centered');
+
+    %% 4. Theoretical Continuous Baseband PSD (Sunde's FSK)
+    % S_B(f) = (Eb/(2*Tb))*[delta(f - 1/(2*Tb)) + delta(f + 1/(2*Tb))]
+    %          + (8*Eb/pi^2) * cos^2(pi*f*Tb) / (1 - 4*f^2*Tb^2)^2
+    u     = f_psd * Tb;                 % Normalized frequency f * Tb
+    denom = 1 - 4 * u.^2;
+    psd_theo_cont = (8 * Eb / pi^2) * (cos(pi * u) ./ denom).^2;
+
+    % Handle removable 0/0 singularity at f*Tb = +/- 0.5 (limit = Eb/2)
+    sing_idx = abs(denom) < 1e-10;
+    psd_theo_cont(sing_idx) = Eb / 2;
+
+    %% 5. Extract Short Time-Domain Segment (First 8 Bits) for Waveform Plot
+    n_wave_bits = 8;
+    n_wave_samp = n_wave_bits * sps;
+
+    %% 6. Pack Output Struct
+    bfsk.EbNo_dB       = EbNo_dB;
+    bfsk.EbNo_fine     = EbNo_fine;
+    bfsk.sim_ber       = sim_ber;
+    bfsk.theo_ber      = theoretical_ber(EbNo_dB,   'BFSK');
+    bfsk.theo_ber_fine = theoretical_ber(EbNo_fine, 'BFSK');
+
+    bfsk.Tb            = Tb;
+    bfsk.sps           = sps;
+    bfsk.fs            = fs;
+    bfsk.f_psd         = f_psd;
+    bfsk.psd_sim       = psd_sim;
+    bfsk.psd_theo_cont = psd_theo_cont;
+    bfsk.f_lines       = [-f_dev, f_dev];
+
+    bfsk.n_wave_bits   = n_wave_bits;
+    bfsk.bits_wave     = bits_psd(1:n_wave_bits);
+    bfsk.t_wave        = t(1:n_wave_samp);
+    bfsk.s_wave        = s_bb(1:n_wave_samp);
 end
-
-%% Plot BFSK BER Curve
-figure('Name', 'Task 3 - BFSK BER Curve', 'Position', [100 100 800 550]);
-semilogy(EbNo_dB, ber_theo, 'r-', 'LineWidth', 1.8, 'DisplayName', 'Theoretical: Q(\surd(E_b/N_0))');
-hold on;
-idx = ber_sim > 0;
-semilogy(EbNo_dB(idx), ber_sim(idx), 'bo', 'LineWidth', 1.5, 'MarkerSize', 7, ...
-    'DisplayName', 'Simulated BFSK (Coherent)');
-grid on; box on;
-xlabel('E_b / N_0 (dB)', 'FontSize', 12, 'FontWeight', 'bold');
-ylabel('Bit Error Rate (BER)', 'FontSize', 12, 'FontWeight', 'bold');
-title('Coherent BFSK BER vs. E_b/N_0 over AWGN Channel', 'FontSize', 13, 'FontWeight', 'bold');
-legend('Location', 'southwest', 'FontSize', 11);
-axis([0 13 1e-6 1]);
-
-%% =========================================================================
-%% Section 2: BFSK Baseband Equivalent Signal & PSD Simulation
-%% =========================================================================
-fprintf('\n---> Simulating BFSK Baseband Equivalent Power Spectral Density (PSD)...\n');
-
-% Parameters for continuous-time baseband waveform synthesis
-Tb = 1e-3;                 % Bit duration = 1 ms (Rb = 1 kHz)
-samples_per_bit = 32;      % Oversampling factor
-Fs = samples_per_bit / Tb; % Sampling frequency (32 kHz)
-dt = 1 / Fs;
-
-% Carrier choice: fc = (f1 + f2)/2 -> frequency shift is +/- Delta_f / 2 = +/- 1 / (2*Tb)
-% Delta_f = 1/Tb for orthogonal BFSK
-Delta_f = 1 / Tb;
-f_dev = Delta_f / 2;       % 500 Hz
-
-N_symbols = 20000;
-bits = randi([0 1], N_symbols, 1);
-
-% Baseband equivalent complex pulse for each bit:
-% For bit 0: exp(-j * 2*pi * f_dev * t)
-% For bit 1: exp(+j * 2*pi * f_dev * t)
-t_bit = (0:samples_per_bit-1)' * dt;
-pulse0 = exp(-1j * 2 * pi * f_dev * t_bit);
-pulse1 = exp(+1j * 2 * pi * f_dev * t_bit);
-
-% Assemble full baseband equivalent waveform
-signal_matrix = zeros(samples_per_bit, N_symbols);
-for n = 1:N_symbols
-    if bits(n) == 0
-        signal_matrix(:, n) = pulse0;
-    else
-        signal_matrix(:, n) = pulse1;
-    end
-end
-baseband_signal = signal_matrix(:);
-
-% Compute Welch PSD estimate
-nfft = 2048;
-window = hamming(1024);
-noverlap = 512;
-[Pxx, f] = pwelch(baseband_signal, window, noverlap, nfft, Fs, 'centered');
-
-%% Plot BFSK Baseband PSD
-figure('Name', 'Task 3 - BFSK Baseband PSD', 'Position', [150 150 850 550]);
-plot(f / 1e3, 10*log10(Pxx / max(Pxx)), 'b-', 'LineWidth', 1.6);
-grid on; box on;
-xlabel('Frequency (kHz) [Relative to Carrier f_c]', 'FontSize', 12, 'FontWeight', 'bold');
-ylabel('Normalized Power Spectral Density (dB/Hz)', 'FontSize', 12, 'FontWeight', 'bold');
-title('Simulated Power Spectral Density of Baseband Equivalent BFSK Signal', ...
-    'FontSize', 13, 'FontWeight', 'bold');
-xlim([-4*Delta_f/1e3, 4*Delta_f/1e3]);
-ylim([-50 5]);
-
-%% Save All Results
-output_dir = fullfile('..', 'results');
-if ~exist(output_dir, 'dir')
-    mkdir(output_dir);
-end
-
-saveas(1, fullfile(output_dir, 'task3_bfsk_ber.png'));
-savefig(1, fullfile(output_dir, 'task3_bfsk_ber.fig'));
-saveas(2, fullfile(output_dir, 'task3_bfsk_psd.png'));
-savefig(2, fullfile(output_dir, 'task3_bfsk_psd.fig'));
-
-fprintf('\n[SUCCESS] Task 3 plots saved to %s\n', output_dir);
