@@ -1,4 +1,4 @@
-# Single-Carrier Digital Modulation: Performance over AWGN
+﻿# Single-Carrier Digital Modulation: Performance over AWGN
 **EECG331: Advanced Communication Systems — Project Part I**  
 **Electronics and Communications Department | Faculty of Engineering, Cairo University**  
 *Academic Year: 2026/2027*
@@ -156,7 +156,7 @@ $$s_i(t) = \sqrt{\frac{2E_b}{T_b}} \cos(2\pi f_i t), \quad 0 \le t \le T_b, \qua
 ## 📂 Repository Directory Layout
 
 ```text
-part1/
+Single-Carrier-Digital-Modulation/
 ├── README.md                      # Comprehensive project documentation (this file)
 │
 ├── specs/                         # Official project requirement specifications
@@ -202,7 +202,7 @@ part1/
 ### Quick Start
 1. Open MATLAB and navigate to the `src` folder:
    ```matlab
-   cd 'D:/EECE 5/Advanced Communication Systems/Projects/part1/src'
+   cd 'D:/EECE 5/Advanced Communication Systems/Projects/Single-Carrier-Digital-Modulation/src'
    ```
 2. **To re-run the full simulation from scratch:**
    ```matlab

@@ -1,4 +1,4 @@
-# Single-Carrier Digital Modulation: Performance over AWGN
+﻿# Single-Carrier Digital Modulation: Performance over AWGN
 **EECG331: Advanced Communication Systems — Project Part I**  
 **Electronics and Communications Department | Faculty of Engineering, Cairo University**  
 *Academic Year: 2026/2027*
@@ -16,7 +16,7 @@
 - **Course Instructor:** Dr. Mohammed Khairy  
 - **Teaching Assistant:** Eng. Mohammed Khaled  
 - **Repository Branch:** `part-1`  
-- **Deliverables:** Complete simulation code ([`part1/src/`](./part1/src)), publication-quality plots ([`part1/results/`](./part1/results)), and comprehensive technical report ([`part1/report/Single-Carrier Digital Modulation.pdf`](./part1/report/Single-Carrier%20Digital%20Modulation.pdf)).
+- **Deliverables:** Complete simulation code ([`Single-Carrier-Digital-Modulation/src/`](./Single-Carrier-Digital-Modulation/src)), publication-quality plots ([`Single-Carrier-Digital-Modulation/results/`](./Single-Carrier-Digital-Modulation/results)), and comprehensive technical report ([`Single-Carrier-Digital-Modulation/report/Single-Carrier Digital Modulation.pdf`](./Single-Carrier-Digital-Modulation/report/Single-Carrier%20Digital%20Modulation.pdf)).
 
 ---
 
@@ -45,19 +45,19 @@ Data Bits bk           Transmitted Symbols xk           Received Symbols yk     
 ```
 
 ### Modular Building Blocks:
-1. **Mapper ([`part1/src/mapper.m`](./part1/src/mapper.m)):**
+1. **Mapper ([`Single-Carrier-Digital-Modulation/src/mapper.m`](./Single-Carrier-Digital-Modulation/src/mapper.m)):**
    - Groups input bits into symbols of $k = \log_2(M)$ bits.
    - Converts binary bit sequences to decimal symbol indices using vectorized bit weights ($2^{k-1:-1:0}$).
    - Normalizes constellation points to unit average symbol energy ($E_s = 1$), ensuring bit energy is consistently $E_b = E_s / k = 1/k$.
-2. **AWGN Channel ([`part1/src/awgn_channel.m`](./part1/src/awgn_channel.m)):**
+2. **AWGN Channel ([`Single-Carrier-Digital-Modulation/src/awgn_channel.m`](./Single-Carrier-Digital-Modulation/src/awgn_channel.m)):**
    - Generates complex Gaussian noise strictly using MATLAB's `randn`:
      $$\sigma = \sqrt{\frac{N_0}{2}} = \sqrt{\frac{E_b}{2 \cdot 10^{(E_b/N_0)_{\text{dB}} / 10}}}$$
      $$n_k = \sigma \cdot \left(\text{randn} + j \cdot \text{randn}\right)$$
-3. **Demapper ([`part1/src/demapper.m`](./part1/src/demapper.m)):**
+3. **Demapper ([`Single-Carrier-Digital-Modulation/src/demapper.m`](./Single-Carrier-Digital-Modulation/src/demapper.m)):**
    - Implements universal Maximum Likelihood (ML) / Minimum Euclidean Distance detection:
      $$\hat{s}_k = \arg\min_{s_m \in \mathcal{C}} |y_k - s_m|^2$$
    - Matrix-vectorized across all received symbols without loops, decoding symbol indices back into $k$ binary bits via `bitget`.
-4. **Theoretical Calculations ([`part1/src/theoretical_ber.m`](./part1/src/theoretical_ber.m)):**
+4. **Theoretical Calculations ([`Single-Carrier-Digital-Modulation/src/theoretical_ber.m`](./Single-Carrier-Digital-Modulation/src/theoretical_ber.m)):**
    - Implements exact formulas and tight union bounds using the complementary error function (`erfc`) via the identity $Q(x) = \frac{1}{2} \text{erfc}(x/\sqrt{2})$, eliminating any dependency on external toolboxes.
 
 ---
@@ -160,7 +160,7 @@ Digital_Comm/
 ├── .gitignore                     # Ignores MATLAB .asv, caches, LaTeX build files, Python venvs
 ├── README.md                      # Main repository documentation (this file)
 │
-└── part1/                         # Project Part 1 Root Workspace
+└── Single-Carrier-Digital-Modulation/                         # Project Part 1 Root Workspace
     ├── README.md                  # Part 1 technical specification & checklist
     │
     ├── specs/                     # Official project requirement specifications
@@ -204,9 +204,9 @@ Digital_Comm/
 - No specialized toolboxes required (self-contained using built-in `erfc`).
 
 ### Quick Start
-1. Open MATLAB and navigate to the `part1/src` folder:
+1. Open MATLAB and navigate to the `Single-Carrier-Digital-Modulation/src` folder:
    ```matlab
-   cd 'part1/src'
+   cd 'Single-Carrier-Digital-Modulation/src'
    ```
 2. **To re-run the full simulation from scratch:**
    ```matlab
