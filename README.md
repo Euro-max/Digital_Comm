@@ -19,7 +19,7 @@ This repository is organized to facilitate collaborative development across the 
 | Project Part | Description / Focus | Branch | Owner / Lead |
 | :--- | :--- | :--- | :--- |
 | **Part 1** | Single Carrier Modulation & BER Performance (BPSK, QPSK, 8PSK, 16-QAM, BFSK under AWGN) | `part-1` | Adham |
-| **Part 2** | Project Part 2 *(Specs to be added)* | `part-2` | Team Member 2 |
+| **Part 2** | Rayleigh flat channel Performance Analysis across different modulation schemes (BPSK,QPSK,16QAM) | `part-2` | Ahmed Wael |
 | **Part 3** | Project Part 3 *(Specs to be added)* | `part-3` | Team Member 3 |
 
 ---
@@ -40,8 +40,7 @@ Digital_Comm/
 │
 ├── part2/                   # Project Part 2
 │   ├── README.md            # Project 2 guidelines & task description
-│   ├── specs/               # Specification sheets & guidelines
-│   ├── src/                 # Implementation source code
+│   ├── code/                 # Implementation source code
 │   ├── results/             # Simulation results & plots
 │   └── report/              # Deliverable report
 │
