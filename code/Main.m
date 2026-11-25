@@ -43,11 +43,7 @@ switch mod_key
     case '16QAM'
         % Exact Gray-coded 16-QAM BER over Rayleigh fading
         g1 = (2/5)  * Eb_N0_lin;
-        g3 = (18/5) * Eb_N0_lin;
-        g5 = 10     * Eb_N0_lin;
-        BER_theory = (3/8) * (1 - sqrt(g1 ./ (1 + g1))) ...
-                   + (1/4) * (1 - sqrt(g3 ./ (1 + g3))) ...
-                   - (1/8) * (1 - sqrt(g5 ./ (1 + g5)));
+       BER_theory = (3/8) * (1 - sqrt(g1 ./ (1 + g1)));
 end
 
 % 4. Plot BER vs. Eb/N0
