@@ -20,7 +20,7 @@ This repository is organized to facilitate collaborative development across the 
 | :--- | :--- | :--- | :--- |
 | **Part 1** | Single Carrier Modulation & BER Performance (BPSK, QPSK, 8PSK, 16-QAM, BFSK under AWGN) | `part-1` | Adham |
 | **Part 2** | Rayleigh flat channel Performance Analysis across different modulation schemes (BPSK,QPSK,16QAM) | `part-2` | Ahmed Wael |
-| **Part 3** | Project Part 3 *(Specs to be added)* | `part-3` | Team Member 3 |
+| **Part 3** | OFDM System Simulation with BER Performance Analysis for BPSK& 16-QAM Modulations, Comparing Uncoded& Rate-1/5 Repetition-Coded Streams, across Rayleigh Flat Fading& Frequency Selective Fading, Where Each Subchannel Undergoes Independent Rayleigh Fading, Channels| `part-3` | Kerolos Samir |
 
 ---
 
